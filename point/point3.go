@@ -2,33 +2,39 @@ package point
 
 import (
 	"context"
+	"demo1/contracts"
 	"fmt"
-	"github.com/bytedance/sonic"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"math/big"
+	"strings"
 )
+
+type LogTransfer struct {
+	From  common.Address
+	To    common.Address
+	Value *big.Int
+}
 
 func Point3(high int64) {
 	fmt.Println("-------------------------Point 3-----------------------------")
-	block, err := ethClient.BlockByNumber(context.Background(), big.NewInt(high))
-	if err != nil {
-		return
+	block, _ := ethClient.BlockByNumber(context.Background(), big.NewInt(high))
+	contractAbi, _ := abi.JSON(strings.NewReader(string(contracts.Erc20ABI)))
+	logTransferSig := []byte("Transfer(address,address,uint256)")
+	logTransferSigHash := crypto.Keccak256Hash(logTransferSig)
+	for _, transaction := range block.Transactions() {
+		receipt, _ := ethClient.TransactionReceipt(context.Background(), transaction.Hash())
+		for _, log := range receipt.Logs {
+			switch log.Topics[0].Hex() {
+			case logTransferSigHash.Hex():
+				var transferEvent LogTransfer
+				_ = contractAbi.UnpackIntoInterface(&transferEvent, "Transfer", log.Data)
+				transferEvent.From = common.HexToAddress(log.Topics[1].Hex())
+				transferEvent.To = common.HexToAddress(log.Topics[2].Hex())
+				fmt.Printf("Transfer: from:%s to:%s value:%s \n", transferEvent.From.Hex(), transferEvent.To.Hex(), transferEvent.Value)
+
+			}
+		}
 	}
-	//trans hash: 0x16a8ac8af36f0227e6bc17fbf44fe88e72412505076c9ba64943206b457a5445
-	receipt, err := ethClient.TransactionReceipt(context.Background(), block.Transactions()[8].Hash())
-	b, _ := sonic.Marshal(receipt.Logs)
-	formatPrint(b)
-	//fmt.Printf("%s | %s | %s | %s \n", "token", "from", "to", "value")
-	//for _, tx := range block.Transactions() {
-	//
-	//
-	//	chainID, err := ethClient.NetworkID(context.Background())
-	//	if err != nil {
-	//		log.Fatal(err)
-	//	}
-	//	from, err := types.Sender(types.NewEIP155Signer(chainID), tx)
-	//	if err != nil {
-	//		fmt.Println(err)
-	//	}
-	//	fmt.Printf("%s | %s | %s | %s \n", "", from.Hex(), tx.To().Hex(), tx.Value())
-	//}
 }

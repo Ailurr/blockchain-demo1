@@ -143,18 +143,18 @@ func parseTransactionInfo(t *Trans) {
 func Point1(hash string) {
 	fmt.Println("-------------------------- Point 1 ------------------------------")
 
-	fmt.Printf("---------- getblock by hash: %s ---------\n", hash)
+	//fmt.Printf("---------- getblock by hash: %s ---------\n", hash)
 	block, err := btcClient.getBlock(hash)
 	if err != nil {
 		return
 	}
-	b, _ := sonic.Marshal(block)
-	formatPrint(b)
+	//b, _ := sonic.Marshal(block)
+	//formatPrint(b)
 
-	fmt.Println("----------- get a sample transaction such as block.Tx[2] -----------")
+	//fmt.Println("----------- get a sample transaction such as block.Tx[2] -----------")
 	transaction, err := btcClient.getTransaction(block.Tx[2])
-	t, _ := sonic.Marshal(transaction)
-	formatPrint(t)
+	//t, _ := sonic.Marshal(transaction)
+	//formatPrint(t)
 
 	fmt.Println("----------- parse transaction ---------")
 	parseTransactionInfo(&transaction)

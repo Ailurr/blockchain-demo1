@@ -78,7 +78,7 @@ func Point2(privatekey string, toAdr string, value *big.Int) {
 	opts.GasTipCap = gasTipCap
 
 	amount, _ := new(big.Int).SetString("1000000000", 10)
-	usdt, _ := contracts.NewUsdt(common.HexToAddress("0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0"), ethClient)
+	usdt, _ := contracts.NewErc20(common.HexToAddress("0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0"), ethClient)
 	tx, err := usdt.Transfer(opts, toAddress, amount)
 	if err != nil {
 		fmt.Println("token.Transfer error ,", err)
