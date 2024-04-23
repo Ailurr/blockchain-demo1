@@ -37,7 +37,7 @@ func Erc20LogTransfer(high int64) ([]model.LogTransfer, error) {
 				var transferEvent model.LogTransfer
 				err = contractAbi.UnpackIntoInterface(&transferEvent, "Transfer", log.Data)
 				if err != nil {
-					//has nil amount
+					//println(err.Error())
 				}
 				transferEvent.From = common.HexToAddress(log.Topics[1].Hex())
 				transferEvent.To = common.HexToAddress(log.Topics[2].Hex())

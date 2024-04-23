@@ -6,9 +6,9 @@ import (
 )
 
 type LogTransfer struct {
-	From   common.Address `json:"from"`
-	To     common.Address `json:"to"`
-	Amount *big.Int       `json:"amount"`
+	From  common.Address `json:"from"`
+	To    common.Address `json:"to"`
+	Value *big.Int       `json:"value"`
 }
 
 type Erc20TransferArgs struct {
