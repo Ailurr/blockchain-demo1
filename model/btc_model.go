@@ -1,5 +1,9 @@
 package model
 
+type BTCRequest struct {
+	Method string        `json:"method"`
+	Params []interface{} `json:"params"`
+}
 type Block struct {
 	Hash              string   `json:"hash"`
 	Confirmations     int      `json:"confirmations"`
