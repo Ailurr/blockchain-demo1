@@ -1,26 +1,26 @@
-package point
+package service
 
 import (
 	"context"
 	"demo1/contracts"
-	"fmt"
+	"math/big"
+	"strings"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"math/big"
-	"strings"
 )
 
 type LogTransfer struct {
-	From  common.Address
-	To    common.Address
-	Value *big.Int
+	From  common.Address `json:"from"`
+	To    common.Address `json:"to"`
+	Value *big.Int       `json:"value"`
 }
 
-func Point3(high int64) {
-	fmt.Println("-------------------------Point 3-----------------------------")
+func Point3(high int64) []LogTransfer {
+	logTransfers := make([]LogTransfer, 0)
 	block, _ := ethClient.BlockByNumber(context.Background(), big.NewInt(high))
-	contractAbi, _ := abi.JSON(strings.NewReader(string(contracts.Erc20ABI)))
+	contractAbi, _ := abi.JSON(strings.NewReader(string(contracts.Erc20MetaData.ABI)))
 	logTransferSig := []byte("Transfer(address,address,uint256)")
 	logTransferSigHash := crypto.Keccak256Hash(logTransferSig)
 	for _, transaction := range block.Transactions() {
@@ -32,9 +32,9 @@ func Point3(high int64) {
 				_ = contractAbi.UnpackIntoInterface(&transferEvent, "Transfer", log.Data)
 				transferEvent.From = common.HexToAddress(log.Topics[1].Hex())
 				transferEvent.To = common.HexToAddress(log.Topics[2].Hex())
-				fmt.Printf("Transfer: from:%s to:%s value:%s \n", transferEvent.From.Hex(), transferEvent.To.Hex(), transferEvent.Value)
-
+				logTransfers = append(logTransfers, transferEvent)
 			}
 		}
 	}
+	return logTransfers
 }

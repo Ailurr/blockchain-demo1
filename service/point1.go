@@ -1,11 +1,11 @@
-package point
+package service
 
 import (
 	"bytes"
-	"fmt"
-	"github.com/bytedance/sonic"
 	"io"
 	"net/http"
+
+	"github.com/bytedance/sonic"
 )
 
 type BTCClient struct {
@@ -55,7 +55,9 @@ type Trans struct {
 			Asm string `json:"asm"`
 			Hex string `json:"hex"`
 		} `json:"scriptSig"`
-		Sequence int64 `json:"sequence"`
+		Sequence    int64    `json:"sequence"`
+		Coinbase    string   `json:"coinbase"`
+		Txinwitness []string `json:"txinwitness"`
 	} `json:"vin"`
 	Vout []struct {
 		Value        float64 `json:"value"`
@@ -115,47 +117,70 @@ func (c *BTCClient) getTransaction(hex string) (Trans, error) {
 	sonic.Unmarshal([]byte(string(respBytes)), &res)
 	return res.Result, nil
 }
-func parseTransactionInfo(t *Trans) {
-	fmt.Printf("txhash: %s\n", t.Txid)
 
+type UTXO struct {
+	Address string  `json:"address,omitempty"`
+	Value   float64 `json:"value,omitempty"`
+}
+type ParsedTrans struct {
+	TxId string  `json:"txid"`
+	In   []UTXO  `json:"in"`
+	Out  []UTXO  `json:"out"`
+	Fee  float64 `json:"fee"`
+}
+
+func parseTransactionInfo(t *Trans) ParsedTrans {
 	totalIn := 0.0
 	totalOut := 0.0
-
-	fmt.Printf("----Inputs----\n")
+	in := make([]UTXO, 0)
+	out := make([]UTXO, 0)
 	for _, s := range t.Vin {
 		transaction, _ := btcClient.getTransaction(s.Txid)
 		val := transaction.Vout[s.Vout].Value
 		totalIn += val
-		fmt.Printf("Address:%s | amount：%.8f BTC\n", transaction.Vout[s.Vout].ScriptPubKey.Address, val)
+		in = append(in, UTXO{
+			Address: transaction.Vout[s.Vout].ScriptPubKey.Address,
+			Value:   val,
+		})
+		//fmt.Printf("Address:%s | amount：%.8f BTC\n", transaction.Vout[s.Vout].ScriptPubKey.Address, val)
 	}
 
-	fmt.Printf("----Outputs----\n")
 	for _, s := range t.Vout {
 		totalOut += s.Value
-		fmt.Printf("Adress:%s | amount：%.8f BTC\n", s.ScriptPubKey.Address, s.Value)
+		out = append(out, UTXO{
+			Address: s.ScriptPubKey.Address,
+			Value:   s.Value,
+		})
+		//fmt.Printf("Adress:%s | amount：%.8f BTC\n", s.ScriptPubKey.Address, s.Value)
 	}
-
 	fee := totalIn - totalOut
-	fmt.Printf("-----Total-----\n")
-	fmt.Printf("totalIn: %.8f BTC \ntotalOut: %.8f BTC \ntxfee: %.8f BTC\n", totalIn, totalOut, fee)
+	res := ParsedTrans{
+		TxId: t.Txid,
+		In:   in,
+		Out:  out,
+		Fee:  fee,
+	}
+	return res
 }
 
-func Point1(hash string) {
-	fmt.Println("-------------------------- Point 1 ------------------------------")
+func Point1(hash string) ([]ParsedTrans, error) {
 
-	//fmt.Printf("---------- getblock by hash: %s ---------\n", hash)
 	block, err := btcClient.getBlock(hash)
 	if err != nil {
-		return
+		return []ParsedTrans{}, err
 	}
-	//b, _ := sonic.Marshal(block)
-	//formatPrint(b)
+	result := make([]ParsedTrans, 0)
+	for i, tx := range block.Tx {
+		if i >= 3 {
+			break
+		}
+		transaction, _ := btcClient.getTransaction(tx)
+		if transaction.Vin[0].Coinbase != "" {
+			continue
+		}
+		parsedTrans := parseTransactionInfo(&transaction)
+		result = append(result, parsedTrans)
+	}
 
-	//fmt.Println("----------- get a sample transaction such as block.Tx[2] -----------")
-	transaction, err := btcClient.getTransaction(block.Tx[2])
-	//t, _ := sonic.Marshal(transaction)
-	//formatPrint(t)
-
-	fmt.Println("----------- parse transaction ---------")
-	parseTransactionInfo(&transaction)
+	return result, nil
 }

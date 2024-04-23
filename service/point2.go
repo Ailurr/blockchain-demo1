@@ -1,17 +1,18 @@
-package point
+package service
 
 import (
 	"context"
 	"demo1/contracts"
 	"fmt"
+	"log"
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"log"
-	"math/big"
 )
 
-func Point2(privatekey string, toAdr string, value *big.Int) {
+func Point2(privatekey string, toAdr string, value *big.Int) string {
 	fmt.Println("-------------------------Point 2-----------------------------")
 
 	privateKey, err := crypto.HexToECDSA(privatekey)
@@ -39,9 +40,9 @@ func Point2(privatekey string, toAdr string, value *big.Int) {
 	toAddress := common.HexToAddress(toAdr)
 
 	chainID, err := ethClient.NetworkID(context.Background())
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
+	if err != nil {
+		log.Fatal(err)
+	}
 	//var data []byte
 	//tx := types.NewTx(&types.DynamicFeeTx{
 	//	ChainID:   chainID,
@@ -70,7 +71,7 @@ func Point2(privatekey string, toAdr string, value *big.Int) {
 	opts, err := bind.NewKeyedTransactorWithChainID(privateKey, chainID)
 	if err != nil {
 		fmt.Println("bind.NewKeyedTransactorWithChainID error ,", err)
-		return
+		return ""
 	}
 	gasTipCap, _ := ethClient.SuggestGasTipCap(context.Background())
 	opts.GasFeeCap = big.NewInt(108694000460)
@@ -82,8 +83,8 @@ func Point2(privatekey string, toAdr string, value *big.Int) {
 	tx, err := usdt.Transfer(opts, toAddress, amount)
 	if err != nil {
 		fmt.Println("token.Transfer error ,", err)
-		return
+		return ""
 	}
 
-	fmt.Println("transfer tx : ", tx.Hash().Hex())
+	return tx.Hash().Hex()
 }

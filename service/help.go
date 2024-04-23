@@ -1,9 +1,6 @@
-package point
+package service
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
@@ -15,8 +12,9 @@ func init() {
 	ethClient, _ = ethclient.Dial("https://sepolia.infura.io/v3/d4a09685d62a40738b42e40880995927")
 	btcClient = NewBTCClient()
 }
-func formatPrint(s []byte) {
-	var out bytes.Buffer
-	json.Indent(&out, s, "", "  ")
-	fmt.Println(out.String())
-}
+
+//func formatPrint(s []byte) {
+//	var out bytes.Buffer
+//	json.Indent(&out, s, "", "  ")
+//	fmt.Println(out.String())
+//}

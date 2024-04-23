@@ -1,0 +1,23 @@
+### 通过区块哈希解析区块内对应交易（过滤第一个coionbase，只解析第二三个）
+< {%
+    request.variables.set("hash", "0000000000000000000285f2233538754a9d409e939c5800ba8f88862fdc55e5")
+%}
+GET localhost:23543/v1/block/hash/{{hash}}/transfer
+
+
+### ERC20 token转账
+#POST localhost:23543/v1/transaction/erc20/transfer
+#Content-Type: application/json
+#
+#{
+#  "private_key": "xxxxxxxxxxxxxxxxxxxxx",
+#  "to_address":"xxxxxxxxxxxxxxxxxxxxx",
+#  "amount":10000
+#}
+
+
+###根据区块高度获取区块，并解析所有的ERC20 Trasnfer交易
+< {%
+    request.variables.set("high", "5731717")
+%}
+GET localhost:23543/v1/block/high/{{high}}/event/transfer
