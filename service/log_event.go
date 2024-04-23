@@ -40,7 +40,6 @@ func Erc20LogTransfer(high int64) ([]model.LogTransfer, error) {
 		<-asyctl
 		go func() {
 			receipt, err := ethClient.TransactionReceipt(context.Background(), transaction.Hash())
-			//fmt.Printf("receipt.Logs len: %d\n", len(receipt.Logs))
 			if err != nil {
 				fmt.Println("get receipt err %w\n", err)
 			}

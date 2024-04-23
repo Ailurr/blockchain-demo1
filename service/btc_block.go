@@ -141,7 +141,7 @@ func GetBlockTransInfo(hash string) ([]model.ParsedTrans, error) {
 	if err != nil {
 		return []model.ParsedTrans{}, fmt.Errorf("getBlock err %w", err)
 	}
-	ans := make([]model.ParsedTrans, num)
+	res := make([]model.ParsedTrans, num)
 
 	asyctl := make(chan struct{}, 12)
 	for i := 0; i < 12; i++ {
@@ -169,7 +169,7 @@ func GetBlockTransInfo(hash string) ([]model.ParsedTrans, error) {
 			if err != nil {
 				fmt.Printf("parseTransactionInfo err %s.", err.Error())
 			}
-			ans[i] = parsedTrans
+			res[i] = parsedTrans
 			asyctl <- struct{}{}
 			wg.Done()
 		}()
@@ -178,5 +178,5 @@ func GetBlockTransInfo(hash string) ([]model.ParsedTrans, error) {
 	//TODO 必须额外加一个wg.Done()才能结束
 	wg.Done()
 	wg.Wait()
-	return ans, nil
+	return res, nil
 }
