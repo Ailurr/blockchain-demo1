@@ -12,9 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func Erc20Transfer(privatekey string, toAdr string, value *big.Int) string {
-	fmt.Println("-------------------------Point 2-----------------------------")
-
+func Erc20Transfer(privatekey string, toAdr string, value *big.Int) (string, error) {
 	privateKey, err := crypto.HexToECDSA(privatekey)
 	if err != nil {
 		log.Fatal(err)
@@ -41,7 +39,7 @@ func Erc20Transfer(privatekey string, toAdr string, value *big.Int) string {
 
 	chainID, err := ethClient.NetworkID(context.Background())
 	if err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("fail to get chain id: %w", err)
 	}
 	//var data []byte
 	//tx := types.NewTx(&types.DynamicFeeTx{
@@ -51,7 +49,7 @@ func Erc20Transfer(privatekey string, toAdr string, value *big.Int) string {
 	//	GasTipCap: tip,
 	//	Gas:       gasLimit,
 	//	To:        &toAddress,
-	//	Value:     value,
+	//	Amount:     value,
 	//	Data:      data,
 	//})
 	//
@@ -70,10 +68,12 @@ func Erc20Transfer(privatekey string, toAdr string, value *big.Int) string {
 	//构建参数对象
 	opts, err := bind.NewKeyedTransactorWithChainID(privateKey, chainID)
 	if err != nil {
-		fmt.Println("bind.NewKeyedTransactorWithChainID error ,", err)
-		return ""
+		return "", fmt.Errorf("fail to create transfer opts: %w", err)
 	}
-	gasTipCap, _ := ethClient.SuggestGasTipCap(context.Background())
+	gasTipCap, err := ethClient.SuggestGasTipCap(context.Background())
+	if err != nil {
+		return "", fmt.Errorf("fail to get gasTipCap: %w", err)
+	}
 	opts.GasFeeCap = big.NewInt(108694000460)
 	opts.GasLimit = uint64(100000)
 	opts.GasTipCap = gasTipCap
@@ -82,9 +82,8 @@ func Erc20Transfer(privatekey string, toAdr string, value *big.Int) string {
 	usdt, _ := contracts.NewErc20(common.HexToAddress("0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0"), ethClient)
 	tx, err := usdt.Transfer(opts, toAddress, amount)
 	if err != nil {
-		fmt.Println("token.Transfer error ,", err)
-		return ""
+		return "", fmt.Errorf("fail to transfer: %w", err)
 	}
 
-	return tx.Hash().Hex()
+	return tx.Hash().Hex(), nil
 }
