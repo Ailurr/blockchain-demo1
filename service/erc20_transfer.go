@@ -12,7 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func Point2(privatekey string, toAdr string, value *big.Int) string {
+func Erc20Transfer(privatekey string, toAdr string, value *big.Int) string {
 	fmt.Println("-------------------------Point 2-----------------------------")
 
 	privateKey, err := crypto.HexToECDSA(privatekey)

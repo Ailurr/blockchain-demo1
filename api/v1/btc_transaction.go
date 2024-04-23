@@ -8,7 +8,7 @@ import (
 
 func (a *ApiV1) GetTransactionByHash(c *gin.Context) {
 	hash := c.Param("hash")
-	parsedTrans, err := service.Point1(hash)
+	parsedTrans, err := service.GetBlockTransInfo(hash)
 
 	if err != nil {
 		utils.FailWithMsg(c, "parse err")
