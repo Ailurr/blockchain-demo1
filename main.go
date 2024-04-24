@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"demo1/global"
 	"demo1/initialize"
 	"demo1/middleware"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/panjf2000/ants/v2"
 	"log"
@@ -49,6 +51,10 @@ func main() {
 		defer cancel()
 		if err := s.Shutdown(ctx); err != nil {
 			log.Fatal("Server Shutdown:", err)
+		}
+		err := global.Rdc.Close()
+		if err != nil {
+			fmt.Println("close redis fail")
 		}
 		exitCh <- struct{}{}
 	}()
