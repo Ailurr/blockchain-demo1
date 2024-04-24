@@ -17,7 +17,7 @@ const (
 )
 
 func newResponse(c *gin.Context, code int, message string, data interface{}) {
-	c.JSON(http.StatusOK, Response{SUCCESS, message, data})
+	c.JSON(http.StatusOK, Response{code, message, data})
 }
 func Ok(c *gin.Context) {
 	newResponse(c, SUCCESS, "Success", nil)
