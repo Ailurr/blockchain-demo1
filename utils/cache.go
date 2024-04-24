@@ -25,8 +25,8 @@ func GetCache(key string) ([]byte, error) {
 
 func SetCache(key string, value string) error {
 	ctx := context.Background()
-	//expiredMinute := rand.Intn(15) + 10
-	expiredMinute := rand.Intn(1) + 1
-	statusCmd := global.Rdc.Set(ctx, key, value, time.Second*time.Duration(expiredMinute))
+	expiredMinute := rand.Intn(15) + 10
+	//expiredMinute := rand.Intn(1) + 1
+	statusCmd := global.Rdc.Set(ctx, key, value, time.Minute*time.Duration(expiredMinute))
 	return statusCmd.Err()
 }
