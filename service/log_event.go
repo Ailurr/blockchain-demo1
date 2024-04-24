@@ -8,13 +8,13 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/panjf2000/ants/v2"
 	"math/big"
 	"strings"
 	"sync"
 )
 
 func Erc20LogTransfer(high int64) ([]model.LogTransfer, error) {
-
 	block, err := ethClient.BlockByNumber(context.Background(), big.NewInt(high))
 	if err != nil {
 		return []model.LogTransfer{}, fmt.Errorf("get block err %w", err)
@@ -28,17 +28,17 @@ func Erc20LogTransfer(high int64) ([]model.LogTransfer, error) {
 
 	logTransfers := make([]model.LogTransfer, 0)
 	var lock sync.Mutex
-	asyctl := make(chan struct{}, 12)
-	for i := 0; i < 12; i++ {
-		asyctl <- struct{}{}
-	}
 	wg := sync.WaitGroup{}
+	pool, err := ants.NewPool(24)
+	if err != nil {
+		return []model.LogTransfer{}, fmt.Errorf("ants pool err %w", err)
+	}
 	fmt.Printf("transacations len: %d\n", len(block.Transactions()))
 	for _, transaction := range block.Transactions() {
 		transaction := transaction
 		wg.Add(1)
-		<-asyctl
-		go func() {
+		err := pool.Submit(func() {
+			defer wg.Done()
 			receipt, err := ethClient.TransactionReceipt(context.Background(), transaction.Hash())
 			if err != nil {
 				fmt.Println("get receipt err %w\n", err)
@@ -58,9 +58,10 @@ func Erc20LogTransfer(high int64) ([]model.LogTransfer, error) {
 					lock.Unlock()
 				}
 			}
-			asyctl <- struct{}{}
-			wg.Done()
-		}()
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
 	wg.Wait()
 	return logTransfers, nil

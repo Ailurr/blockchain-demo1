@@ -5,6 +5,7 @@ import (
 	"demo1/model"
 	"encoding/json"
 	"fmt"
+	"github.com/panjf2000/ants/v2"
 	"io"
 	"net/http"
 	"sync"
@@ -86,34 +87,35 @@ func parseTransactionInfo(t model.Trans) (model.ParsedTrans, error) {
 	in := make([]model.UTXO, len(t.Vin))
 	out := make([]model.UTXO, len(t.Vout))
 	var lock sync.Mutex
-	asyctl := make(chan struct{}, 4)
-	for i := 0; i < 4; i++ {
-		asyctl <- struct{}{}
-	}
 
 	wg := sync.WaitGroup{}
 	fmt.Printf("%s vin len %d\n", t.Txid, len(t.Vin))
+	pool, err := ants.NewPool(24)
+	if err != nil {
+		return model.ParsedTrans{}, fmt.Errorf("ants pool err: %w", err)
+	}
 	for i, utxoIn := range t.Vin {
 		wg.Add(1)
-		<-asyctl
-		uIn := utxoIn
+		utxoIn := utxoIn
 		i := i
-		go func() {
-			transaction, err := btcClient.getTransaction(uIn.Txid)
+		err := pool.Submit(func() {
+			defer wg.Done()
+			transaction, err := btcClient.getTransaction(utxoIn.Txid)
 			if err != nil {
 				fmt.Printf("getTransaction err: %s\n", err.Error())
 			}
-			val := transaction.Vout[uIn.Vout].Value
+			val := transaction.Vout[utxoIn.Vout].Value
 			lock.Lock()
 			totalInNum += val
 			lock.Unlock()
 			in[i] = model.UTXO{
-				Address: transaction.Vout[uIn.Vout].ScriptPubKey.Address,
+				Address: transaction.Vout[utxoIn.Vout].ScriptPubKey.Address,
 				Value:   val,
 			}
-			asyctl <- struct{}{}
-			wg.Done()
-		}()
+		})
+		if err != nil {
+			return model.ParsedTrans{}, err
+		}
 	}
 	for i, s := range t.Vout {
 		totalOutNuM += s.Value
@@ -130,12 +132,10 @@ func parseTransactionInfo(t model.Trans) (model.ParsedTrans, error) {
 		Out:  out,
 		Fee:  fee,
 	}
-
 	return res, nil
 }
 
 func GetBlockTransInfo(hash string) ([]model.ParsedTrans, error) {
-
 	num := 24
 	block, err := btcClient.getBlock(hash)
 	if err != nil {
@@ -143,11 +143,11 @@ func GetBlockTransInfo(hash string) ([]model.ParsedTrans, error) {
 	}
 	res := make([]model.ParsedTrans, num)
 
-	asyctl := make(chan struct{}, 12)
-	for i := 0; i < 12; i++ {
-		asyctl <- struct{}{}
-	}
 	wg := sync.WaitGroup{}
+	pool, err := ants.NewPool(24)
+	if err != nil {
+		return []model.ParsedTrans{}, fmt.Errorf("ants pool err: %w", err)
+	}
 	fmt.Printf("block.Tx len: %d, only use %d for example\n", len(block.Tx), num)
 	for i, tx := range block.Tx {
 		if i >= num {
@@ -155,9 +155,9 @@ func GetBlockTransInfo(hash string) ([]model.ParsedTrans, error) {
 		}
 		tx := tx
 		i := i
-		<-asyctl
 		wg.Add(1)
-		go func() {
+		err := pool.Submit(func() {
+			defer wg.Done()
 			transaction, err := btcClient.getTransaction(tx)
 			if err != nil {
 				fmt.Printf("getTransaction err %s", err.Error())
@@ -170,13 +170,11 @@ func GetBlockTransInfo(hash string) ([]model.ParsedTrans, error) {
 				fmt.Printf("parseTransactionInfo err %s.", err.Error())
 			}
 			res[i] = parsedTrans
-			asyctl <- struct{}{}
-			wg.Done()
-		}()
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
-
-	//TODO 必须额外加一个wg.Done()才能结束
-	wg.Done()
 	wg.Wait()
 	return res, nil
 }
